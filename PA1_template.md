@@ -116,40 +116,47 @@ Devise a strategy for filling in all of the missing values in the dataset.
 
 *A: The strategy was to calculate the aggregate steps after removing NA values.*
 
-Create a new dataset that is equal to the original dataset but with the missing data filled in.
+Create a new dataset that that replaces missing values with the 5 minute average across all days.
 
 
 ```r
-dataComplete <- data[complete.cases(data),]
+#dataImmuted <- data[complete.cases(data),]
+
+dataImmuted <- data
+for (j in 1:nrow(dataImmuted)) {
+  if (is.na(dataImmuted$steps[j])) { 
+    dataImmuted$steps[j] <- dailyMeans$steps[dailyMeans$interval == dataImmuted$interval[j]]
+  }
+}
 ```
 
 Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day.
 
 
 ```r
-dailySumsComplete <- aggregate( steps~date, data=dataComplete, FUN=sum, na.rm=FALSE)
-dailyMeansComplete <- aggregate( steps~interval, data=dataComplete, FUN=mean, na.rm=FALSE)
+dailySumsImmuted <- aggregate( steps~date, data=dataImmuted, FUN=sum, na.rm=FALSE)
+dailyMeansImmuted <- aggregate( steps~interval, data=dataImmuted, FUN=mean, na.rm=FALSE)
 
-meanStepsComplete <- round( mean( dailySumsComplete$steps, na.rm = FALSE ), 1 )
-medianStepsComplete <- round( median( dailySumsComplete$steps, na.rm = FALSE ), 1 )
+meanStepsImmuted <- round( mean( dailySumsImmuted$steps, na.rm = FALSE ), 1 )
+medianStepsImmuted <- round( median( dailySumsImmuted$steps, na.rm = FALSE ), 1 )
 ```
 
 
 ```r
-ggplot(data=dailySumsComplete, aes(x=steps)) + geom_histogram(binwidth = diff(range(dailySumsComplete$steps))/14, fill="#FFFFFF", colour="black") + xlab("Mean Steps") + ylab("Frequency") + ggtitle("Steps Taken per Day")
+ggplot(data=dailySumsImmuted, aes(x=steps)) + geom_histogram(binwidth = diff(range(dailySumsImmuted$steps))/14, fill="#FFFFFF", colour="black") + xlab("Mean Steps") + ylab("Frequency") + ggtitle("Steps Taken per Day")
 ```
 
 ![plot of chunk unnamed-chunk-10](figure/unnamed-chunk-10.png) 
 
-*A: Mean daily steps: 1.0766 &times; 10<sup>4</sup>, Median daily steps: 1.0765 &times; 10<sup>4</sup>*
+*A: Mean daily steps: 1.0766 &times; 10<sup>4</sup>, Median daily steps: 1.0766 &times; 10<sup>4</sup>*
 
 Do these values differ from the estimates from the first part of the assignment? 
 
-*A: No, They are the same because the NA values had previously been removed.*
+*A: Yes, the immuted calculations vasy slightly.*
 
 What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
-*A: The resulting averages would be too low and the curve would be skewed to the left.*
+*A: Without immuting the data the median would reflect the missing values by being slightly lower. There is a chance that the averave would also be higher, although it is not the case in this data set.*
 
 
 **Are there differences in activity patterns between weekdays and weekends?**
@@ -158,13 +165,13 @@ Create a new factor variable in the dataset with two levels, for weekday and wee
 
 
 ```r
-partOfWeek <- weekdays(as.Date(dataComplete$date)) == "Sunday" | weekdays(as.Date(dataComplete$date)) == "Saturday"
+partOfWeek <- weekdays(as.Date(dataImmuted$date)) == "Sunday" | weekdays(as.Date(dataImmuted$date)) == "Saturday"
 partOfWeek <- ifelse(partOfWeek==TRUE, "Weekend", "Weekday")
 partOfWeek <- as.factor(partOfWeek)
 
-dataComplete <- cbind(dataComplete, partOfWeek);
+dataImmuted <- cbind(dataImmuted, partOfWeek);
 
-stepInterval <- sqldf("select interval, partOfWeek, sum(steps) as steps, count(steps) as count from dataComplete group by interval, partOfWeek");
+stepInterval <- sqldf("select interval, partOfWeek, sum(steps) as steps, count(steps) as count from dataImmuted group by interval, partOfWeek");
 ```
 
 ```
